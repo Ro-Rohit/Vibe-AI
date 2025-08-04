@@ -26,6 +26,8 @@ export const lastAssistantTextMessageContent = (result: AgentResult) => {
     : undefined;
 };
 
+
+
 /**
  * Convert a record of files to a tree structure.
  * @param files - Record of file paths to content

@@ -9,7 +9,7 @@ import {
   Tool,
 } from '@inngest/agent-kit';
 import { Sandbox } from '@e2b/code-interpreter';
-import { getSandbox, lastAssistantTextMessageContent } from '@/lib/utils';
+import {  getSandbox, lastAssistantTextMessageContent } from '@/lib/utils';
 import z from 'zod';
 import { FRAGMENT_TITLE_PROMPT, PROMPT, RESPONSE_PROMPT } from '@/lib/prompt';
 import prisma from '@/lib/db';
@@ -105,7 +105,8 @@ export const codeAgent = inngest.createFunction(
               const buffers = { stdout: '', stderr: '' };
 
               try {
-                const result = await sandbox.commands.run(command, {
+                const result = await sandbox.commands.run(`sudo ${command} --unsafe-perm`, {
+                  cwd: '/app',
                   onStdout: (data: string) => {
                     buffers.stdout += data;
                   },
@@ -138,11 +139,13 @@ export const codeAgent = inngest.createFunction(
               async () => {
                 try {
                   const updatedFiles = network.state.data.files || {};
+
                   for (const file of files) {
                     await sandbox.files.write( `/app/src/${file.path}`, file.content);
                     updatedFiles[`/app/src/${file.path}`] = file.content;
                   }
-                  return updatedFiles;
+
+                  return  updatedFiles;
                 } catch (e) {
                   return `CREATEORUPDATE FILE Error: ${e}`;
                 }
@@ -205,6 +208,7 @@ export const codeAgent = inngest.createFunction(
 
     const result = await network.run(event.data.value, {state: state});
 
+
     const fragmentTitleGenerator = createAgent({
       name: 'fragment-title-generator',
       description: 'Generate a title for the code fragment',
@@ -235,8 +239,7 @@ export const codeAgent = inngest.createFunction(
     const {output: fragmentResponseOutput} = await responseGenerator.run(result.state.data.summary)
 
     
-
-
+    
     const sandboxUrl = await step.run('get-sandbox-url', async () => {
       return `https://${sandbox.getHost(3000)}`;
     });
